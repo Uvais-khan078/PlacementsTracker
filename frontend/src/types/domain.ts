@@ -10,6 +10,7 @@ export type MemberProfile = {
   email: string;
   role: ApplicationRole;
   isActive: boolean;
+  mustChangeCredentials: boolean;
   permissions: ModulePermissions;
 };
 

@@ -38,6 +38,18 @@ npm run dev
 
 Open <http://localhost:5173>. Set the public Appwrite endpoint, project ID and database ID in `frontend/.env.local`; these are build-time client settings. Set `VITE_BACKEND_URL=http://localhost:5000` for local development. Never put `APPWRITE_API_KEY` in a `VITE_` variable or frontend file. Public registration is disabled; members sign in with Login IDs provisioned by the TPO.
 
+## Login account onboarding
+
+Default accounts and accounts created by a TPO are marked for mandatory first-login setup. Before the workspace opens, the member must replace the temporary name, add a personal or university email, and set a new password. This status is enforced by the backend until the setup endpoint completes. The additional Super Admin Login ID is `TNP_CELL_UTU` (display name `TNP CELL UTU`). The login provisioning script uses the existing `INITIAL_MEMBER_PASSWORD` setting, or the original default when it is unset; it does not reset passwords on existing accounts.
+
+After updating the database schema, provision or reconcile the initial accounts with:
+
+```bash
+cd backend
+SETUP_TABLES=members npm run setup:appwrite
+npm run provision:login-accounts
+```
+
 ## Validation
 
 ```bash

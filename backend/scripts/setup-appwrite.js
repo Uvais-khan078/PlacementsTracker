@@ -26,6 +26,7 @@ const tables = {
     ['email', 'string', { size: 320, required: true }],
     ['role', 'string', { size: 32, required: true }],
     ['is_active', 'boolean', { required: true, default: true }],
+    ['must_change_credentials', 'boolean', { required: true, default: false }],
     ['permissions_json', 'string', { size: 4000 }],
     ['created_at', 'datetime', { required: true }],
     ['updated_at', 'datetime', { required: true }],

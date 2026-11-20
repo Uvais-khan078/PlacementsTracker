@@ -90,7 +90,7 @@ function memberPermissions(member) {
   try { const saved = JSON.parse(member.permissions_json); return Object.fromEntries(PERMISSION_MODULES.map((module) => [module, ['NONE', 'READ', 'WRITE'].includes(saved?.[module]) ? saved[module] : 'NONE'])); }
   catch { return Object.fromEntries(PERMISSION_MODULES.map((module) => [module, 'NONE'])); }
 }
-function safeMemberView(member) { return { id: member.$id, userId: member.user_id, loginId: member.login_id ? member.login_id.toUpperCase() : '', fullName: member.full_name, email: member.email, role: member.role, isActive: member.is_active, permissions: memberPermissions(member) }; }
+function safeMemberView(member) { return { id: member.$id, userId: member.user_id, loginId: member.login_id ? member.login_id.toUpperCase() : '', fullName: member.full_name, email: member.email, role: member.role, isActive: member.is_active, mustChangeCredentials: member.must_change_credentials === true, permissions: memberPermissions(member) }; }
 function safeBusinessView(row, member) {
   const data = { id: row.$id, ...row };
   delete data.$id; delete data.$createdAt; delete data.$updatedAt; delete data.$permissions; delete data.$databaseId; delete data.$tableId;
@@ -224,6 +224,10 @@ router.use(async (request, _response, next) => {
   try {
     request.auth = await authenticateRequest(request);
     const { member } = request.auth;
+    const onboardingRequest = (request.path === '/auth/profile' && request.method === 'GET') || request.path === '/auth/complete-first-login';
+    if (member.must_change_credentials === true && !onboardingRequest) {
+      throw new AppError('CREDENTIAL_SETUP_REQUIRED', 'Complete your required first-login security setup before using the workspace.', 403);
+    }
     if (request.get('x-bulk-operation-id')) await validateBulkUpdateRequest(request, member);
     if (member.role === 'SUPER_ADMIN') return next();
     const path = request.path;
@@ -708,6 +712,36 @@ router.patch('/auth/profile', async (request, response, next) => {
   } catch (error) { next(error); }
 });
 
+router.post('/auth/complete-first-login', async (request, response, next) => {
+  try {
+    const { member, user } = request.auth;
+    if (member.must_change_credentials !== true) throw new AppError('CONFLICT', 'First-login setup has already been completed.', 409);
+    const body = request.body || {};
+    const fullName = text(body.full_name, 'full_name', 160);
+    const newEmail = email(body.email, 'email');
+    const currentPassword = typeof body.current_password === 'string' ? body.current_password : '';
+    const newPassword = typeof body.new_password === 'string' ? body.new_password : '';
+    if (!fullName || !newEmail || !currentPassword || newPassword.length < 8) throw new AppError('VALIDATION_ERROR', 'Enter your name, personal email, current password and a new password of at least 8 characters.', 400);
+    if (fullName === member.full_name) throw new AppError('VALIDATION_ERROR', 'Enter your own name to replace the temporary profile name.', 400);
+    if (newEmail === String(user.email || '').toLowerCase()) throw new AppError('VALIDATION_ERROR', 'Enter your personal or university email instead of the temporary account email.', 400);
+    if (newEmail.endsWith('@accounts.uktech.local')) throw new AppError('VALIDATION_ERROR', 'Use your real university or personal email address.', 400);
+    if (currentPassword === newPassword) throw new AppError('VALIDATION_ERROR', 'Choose a new password different from the temporary password.', 400);
+    const duplicate = await adminUsers.list({ queries: [sdk.Query.equal('email', [newEmail]), sdk.Query.limit(1)] });
+    if (duplicate.users.some((candidate) => candidate.$id !== user.$id)) throw new AppError('CONFLICT', 'That email address is already linked to another account.', 409);
+
+    // This authenticated account operation validates the current password and updates
+    // the email. Only then do we use the server API to apply the new password/name.
+    const accountClient = new sdk.Client().setEndpoint(process.env.APPWRITE_ENDPOINT).setProject(process.env.APPWRITE_PROJECT_ID).setJWT(request.get('authorization').slice(7));
+    const account = new sdk.Account(accountClient);
+    await account.updateEmail({ email: newEmail, password: currentPassword });
+    await adminUsers.updateName(user.$id, fullName);
+    await adminUsers.updatePassword(user.$id, newPassword);
+    const updated = await adminTables.updateRow(databaseId, 'members', member.$id, { ...member, full_name: fullName, email: newEmail, must_change_credentials: false, updated_at: now() });
+    await audit(member, 'COMPLETE_FIRST_LOGIN_SETUP', 'members', member.$id, { must_change_credentials: true }, { must_change_credentials: false }, request);
+    response.json({ ok: true, data: safeMemberView(updated), meta: { requestId: requestId(request) } });
+  } catch (error) { next(error); }
+});
+
 const DEFAULT_APP_SETTINGS = {
   timezone: 'Asia/Kolkata', date_format: 'DD MMM YYYY', upload_limit_mb: 20,
   industries: ['IT', 'Manufacturing', 'Pharma', 'Cybersecurity', 'Other'],
@@ -783,7 +817,7 @@ router.post('/members', async (request, response, next) => {
     const email = `${loginId}@accounts.uktech.local`;
     const user = await adminUsers.create({ userId: loginId, email, password, name: fullName });
     const timestamp = now();
-    const data = { login_id: loginId, user_id: user.$id, full_name: fullName, email, role, is_active: true, permissions_json: JSON.stringify({ ...DEFAULT_PERMISSIONS }), created_at: timestamp, updated_at: timestamp };
+    const data = { login_id: loginId, user_id: user.$id, full_name: fullName, email, role, is_active: true, must_change_credentials: true, permissions_json: JSON.stringify({ ...DEFAULT_PERMISSIONS }), created_at: timestamp, updated_at: timestamp };
     const row = await adminTables.createRow(databaseId, 'members', sdk.ID.unique(), data);
     await audit(member, 'CREATE', 'members', row.$id, null, { login_id: loginId, full_name: fullName, role }, request);
     response.status(201).json({ ok: true, data: safeMemberView(row), meta: { requestId: requestId(request) } });

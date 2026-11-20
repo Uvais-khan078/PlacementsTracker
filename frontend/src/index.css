@@ -238,6 +238,25 @@ h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; color: #102a43; }
 
 /* Campus identity and touch-friendly navigation. */
 .login-art { background: linear-gradient(135deg, rgba(7, 24, 42, .78), rgba(12, 70, 91, .58)), url('/utuddn.png') center / cover; }
+
+.first-login-screen { background: #f4f7fb; display: grid; grid-template-columns: minmax(0, 1fr) minmax(420px, 560px); min-height: 100vh; }
+.first-login-art { background: linear-gradient(145deg, rgba(7, 24, 42, .90), rgba(12, 70, 91, .78)), url('/utuddn.png') center / cover; color: #d7eee9; display: flex; flex-direction: column; justify-content: center; padding: clamp(36px, 8vw, 120px); }
+.first-login-art img { border-radius: 50%; height: 92px; margin-bottom: 36px; object-fit: cover; width: 92px; }
+.first-login-art h1 { color: #fff; font-size: clamp(2.7rem, 5vw, 5.4rem); letter-spacing: -.06em; line-height: .96; margin: 12px 0 18px; max-width: 650px; }
+.first-login-art > p:not(.eyebrow) { color: #b8c9d8; font-size: 1rem; line-height: 1.7; max-width: 480px; }
+.first-login-panel { align-items: center; display: flex; justify-content: center; padding: 32px; }
+.first-login-card { background: #fff; border: 1px solid #e5edf4; border-radius: 20px; box-shadow: 0 24px 70px rgba(16, 42, 67, .10); max-width: 480px; padding: clamp(24px, 4vw, 42px); width: 100%; }
+.first-login-card h2 { color: #102a43; font-size: 1.8rem; letter-spacing: -.04em; margin: 6px 0 8px; }
+.first-login-card > p.muted { font-size: .9rem; line-height: 1.55; margin-bottom: 24px; }
+.first-login-card form { display: grid; gap: 14px; }
+.first-login-card label { color: #486581; display: grid; font-size: .78rem; font-weight: 700; gap: 6px; }
+.first-login-card input { background: #fff; border: 1px solid #bcccdc; border-radius: 8px; color: #172b4d; outline: 0; padding: 11px 12px; width: 100%; }
+.first-login-card input:focus { border-color: #0e7490; box-shadow: 0 0 0 3px #d7eee9; }
+.first-login-card .inline-error { margin: 0; }
+.first-login-card .primary-button { border-radius: 8px; cursor: pointer; margin-top: 4px; }
+.first-login-card .primary-button:disabled { cursor: wait; opacity: .7; }
+.first-login-signout { margin-top: 20px; }
+@media (max-width: 900px) { .first-login-screen { grid-template-columns: 1fr; }.first-login-art { min-height: 240px; padding: 30px 26px; }.first-login-art img { height: 64px; margin-bottom: 18px; width: 64px; }.first-login-art h1 { font-size: 2.7rem; }.first-login-panel { padding: 18px; }.first-login-card { border-radius: 16px; } }
 .record-id { color: #486581; font: .68rem ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
 .list-filter { align-items: center; color: #627d98; display: flex; font-size: .75rem; font-weight: 700; gap: 8px; }
 .list-filter select { background: #fff; border: 1px solid #bcccdc; border-radius: 8px; color: #334e68; min-height: 36px; padding: 7px 10px; }

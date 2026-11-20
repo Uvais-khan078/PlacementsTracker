@@ -103,7 +103,7 @@ export async function createSessionJwt(): Promise<string> {
   return sessionJwtPromise;
 }
 
-export async function getTrustedProfile(): Promise<{ userId: string; loginId: string; fullName: string; email: string; role: 'SUPER_ADMIN' | 'COMMITTEE_MEMBER'; isActive: boolean; permissions: Record<string, 'NONE' | 'READ' | 'WRITE'> }> {
+export async function getTrustedProfile(): Promise<{ userId: string; loginId: string; fullName: string; email: string; role: 'SUPER_ADMIN' | 'COMMITTEE_MEMBER'; isActive: boolean; mustChangeCredentials: boolean; permissions: Record<string, 'NONE' | 'READ' | 'WRITE'> }> {
   const jwt = await createSessionJwt();
   const backendUrl = import.meta.env.VITE_BACKEND_URL === undefined ? 'http://localhost:5000' : import.meta.env.VITE_BACKEND_URL;
   let response: Response;

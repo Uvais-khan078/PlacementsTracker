@@ -20,6 +20,7 @@ const ReportsPage = lazy(() => import('./features/reports/ReportsPage'));
 const AuditPage = lazy(() => import('./features/audit/AuditPage'));
 const SettingsPage = lazy(() => import('./features/settings/SettingsPage'));
 import { BackendUnavailableScreen, DashboardLoadingScreen, ModuleLoadingScreen, NotFoundScreen } from './features/system/SystemScreens';
+import FirstLoginSetup from './features/auth/FirstLoginSetup';
 
 const navigation = ['Dashboard', 'Companies', 'Leads', 'Contacts', 'Communications', 'Follow-ups', 'Opportunities', 'Academic confirmations', 'Students', 'Applications', 'Interviews', 'Meeting notes', 'Templates', 'Reports'];
 const navAbbreviations: Record<string, string> = { Dashboard: 'Db', Companies: 'Co', Leads: 'Le', Contacts: 'Ct', Communications: 'Cm', 'Follow-ups': 'Fu', Opportunities: 'Op', 'Academic confirmations': 'Ac', Students: 'St', Applications: 'Ap', Interviews: 'In', 'Meeting notes': 'Mn', Templates: 'Te', Reports: 'Re' };
@@ -162,6 +163,9 @@ export default function App() {
   if (session.status === 'loading') return <div className="app-loading-screen"><div className="loading-orbit"><span /></div><div><p className="eyebrow">UKTech T&amp;P</p><strong>Connecting securely</strong><span>Checking your account and placement workspace…</span></div></div>;
   if (session.status === 'signed-out') {
     return <LoginScreen loginId={loginId} password={password} error={error} busy={busy} onLoginIdChange={setLoginId} onPasswordChange={setPassword} onSubmit={handleSignIn} />;
+  }
+  if (session.profile?.mustChangeCredentials) {
+    return <FirstLoginSetup profile={session.profile} onSignOut={() => void handleSignOut()} onComplete={(profile) => setSession({ status: 'signed-in', userEmail: profile.email, profile, profileStatus: 'pending' })} />;
   }
 
   return (
