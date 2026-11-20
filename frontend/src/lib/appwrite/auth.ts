@@ -32,7 +32,14 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
 export async function signIn(email: string, password: string): Promise<AuthUser> {
   invalidateSessionJwt();
-  await account.createEmailPasswordSession(email, password);
+  try {
+    await account.createEmailPasswordSession(email, password);
+  } catch (error) {
+    if (error instanceof TypeError && /fetch/i.test(error.message)) {
+      throw new Error('Could not reach Appwrite sign-in. Check the Appwrite endpoint and add https://placements-tracker-utu.vercel.app as a Web platform in Appwrite Console.');
+    }
+    throw error;
+  }
   return account.get();
 }
 
@@ -43,7 +50,13 @@ export async function resolveLoginId(loginId: string): Promise<string> {
     response = await fetch(`${backendUrl}/api/auth/login-target`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ login_id: loginId }),
     });
-  } catch (error) { signalBackendProblem(); throw error; }
+  } catch (error) {
+    signalBackendProblem();
+    if (error instanceof TypeError && /fetch/i.test(error.message)) {
+      throw new Error('Could not reach the placement backend Login ID lookup. Check the backend URL and browser connection, then retry.');
+    }
+    throw error;
+  }
   signalBackendProblem(response.status);
   const body = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(body.error?.message || 'Invalid Login ID or password.');
