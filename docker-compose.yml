@@ -1,0 +1,32 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env
+    expose:
+      - "5000"
+    restart: unless-stopped
+    environment:
+      TRUST_PROXY: "1"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_APPWRITE_ENDPOINT: ${VITE_APPWRITE_ENDPOINT:?set VITE_APPWRITE_ENDPOINT}
+        VITE_APPWRITE_PROJECT_ID: ${VITE_APPWRITE_PROJECT_ID:?set VITE_APPWRITE_PROJECT_ID}
+        VITE_APPWRITE_DATABASE_ID: ${VITE_APPWRITE_DATABASE_ID:?set VITE_APPWRITE_DATABASE_ID}
+        VITE_BACKEND_URL: ""
+    ports:
+      - "${HTTP_PORT:-8080}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped

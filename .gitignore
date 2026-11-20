@@ -4,11 +4,30 @@ node_modules/
 # Build output
 dist/
 build/
+.vercel/
+.vite/
+coverage/
+*.tsbuildinfo
 
 # Environment variables
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.*.example
+
+# Local placement workbooks and exported backups contain private records
+/Central_Placement_Committee_UTU/
+/backend/images/
+*.sqlite
+*.sqlite3
+*.db
+*.bak
+
+# Keep the repository's setup guide; ignore all other Markdown documents
+*.[mM][dD]
+!/README.md
+*.markdown
+!/README.markdown
 
 # Logs
 *.log

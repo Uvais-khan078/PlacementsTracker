@@ -3,22 +3,37 @@
   "version": "1.0.0",
   "description": "Placement Tracker Backend API",
   "main": "index.js",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "check": "node --check index.js && node --check routes.js && node --check appwrite.js && node --check scripts/setup-appwrite.js && node --check scripts/ensure-storage-bucket.js && node --check scripts/import-uploaded-data.js && node --check scripts/import-templates.js && node --check scripts/import-meeting-notes.js && node --check scripts/provision-login-accounts.js && node --check scripts/classify-company-organizations.js",
+    "setup:appwrite": "node scripts/setup-appwrite.js",
+    "bootstrap:member": "node scripts/bootstrap-member.js",
+    "provision:login-accounts": "node scripts/provision-login-accounts.js",
+    "import:templates": "node scripts/import-templates.js",
+    "import:meeting-notes": "node scripts/import-meeting-notes.js",
+    "import:uploaded-data": "node scripts/import-uploaded-data.js",
+    "classify:organizations": "node scripts/classify-company-organizations.js",
+    "setup:storage": "node scripts/ensure-storage-bucket.js",
+    "delete:legacy-member": "node scripts/delete-legacy-member.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.9.5"
+    "express-rate-limit": "^8.7.5",
+    "helmet": "^8.3.0",
+    "mammoth": "^1.13.0",
+    "node-appwrite": "^32.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.9",
+    "xlsx": "^0.18.5"
   }
 }
