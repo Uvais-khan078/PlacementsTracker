@@ -165,7 +165,7 @@ export default function App() {
     return <LoginScreen loginId={loginId} password={password} error={error} busy={busy} onLoginIdChange={setLoginId} onPasswordChange={setPassword} onSubmit={handleSignIn} />;
   }
   if (session.profile?.mustChangeCredentials) {
-    return <FirstLoginSetup profile={session.profile} onSignOut={() => void handleSignOut()} onComplete={(profile) => setSession({ status: 'signed-in', userEmail: profile.email, profile, profileStatus: 'pending' })} />;
+    return <FirstLoginSetup profile={session.profile} onSignOut={() => void handleSignOut()} />;
   }
 
   return (

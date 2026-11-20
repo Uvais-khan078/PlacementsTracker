@@ -1,15 +1,14 @@
 import { useState, type FormEvent } from 'react';
 import { apiRequest } from '../../lib/api';
-import { getTrustedProfile, signIn, signOut } from '../../lib/appwrite/auth';
+import { signIn, signOut } from '../../lib/appwrite/auth';
 import type { MemberProfile } from '../../types/domain';
 
 type Props = {
   profile: MemberProfile;
-  onComplete: (profile: MemberProfile) => void;
   onSignOut: () => void;
 };
 
-export default function FirstLoginSetup({ profile, onComplete, onSignOut }: Props) {
+export default function FirstLoginSetup({ profile, onSignOut }: Props) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState(profile.email.endsWith('@accounts.uktech.local') ? '' : profile.email);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -35,8 +34,10 @@ export default function FirstLoginSetup({ profile, onComplete, onSignOut }: Prop
       // workspace request is made so the new JWT retains the account scope.
       await signOut().catch(() => undefined);
       await signIn(email.trim(), newPassword);
-      const freshProfile = await getTrustedProfile();
-      onComplete(freshProfile);
+      // Reboot the SDK and request cache with the persisted replacement session.
+      // Keeping the old React tree alive can retain a guest-scoped token after
+      // Appwrite has revoked the temporary-password session.
+      window.location.replace('/');
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Could not secure your account. Please try again.');
     } finally {
