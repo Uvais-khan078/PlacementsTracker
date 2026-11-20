@@ -7,7 +7,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const { rateLimit } = require('express-rate-limit');
 const { router: apiRouter, errorHandler } = require('./routes');
-const { adminTables, adminStorage, databaseId, recruitmentBucketId, sdk } = require('./appwrite');
+const { adminTables, adminStorage, databaseId, missingConfiguration, recruitmentBucketId, sdk } = require('./appwrite');
 
 const app = express();
 const port = Number(process.env.PORT || 5000);
@@ -28,10 +28,19 @@ app.get('/', (_request, response) => {
 });
 
 app.get('/api/status', (_request, response) => {
-  response.json({ ok: true, service: 'uktech-tp-backend', status: 'running' });
+  const configured = missingConfiguration.length === 0;
+  response.status(configured ? 200 : 503).json({
+    ok: configured,
+    service: 'uktech-tp-backend',
+    status: configured ? 'running' : 'configuration_required',
+    ...(configured ? {} : { missingConfiguration }),
+  });
 });
 
 app.get('/api/health', async (_request, response) => {
+  if (missingConfiguration.length) {
+    return response.status(503).json({ status: 'degraded', service: 'uktech-tp-backend', appwrite: { configured: false, missingConfiguration } });
+  }
   let databaseReachable = false; let storageReady = false;
   try { await adminTables.listRows({ databaseId, tableId: 'members', queries: [sdk.Query.limit(1)] }); databaseReachable = true; }
   catch (error) { console.error(`Appwrite database health probe failed: ${error.code || 'unknown'}`); }

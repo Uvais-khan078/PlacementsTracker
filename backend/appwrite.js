@@ -8,14 +8,21 @@ const databaseId = process.env.APPWRITE_DATABASE_ID;
 const apiKey = process.env.APPWRITE_API_KEY;
 const recruitmentBucketId = process.env.APPWRITE_RECRUITMENT_BUCKET_ID || process.env.APPWRITE_STORAGE_BUCKET_ID || 'recruitment-documents';
 
-if (!endpoint || !projectId || !databaseId || !apiKey) {
-  throw new Error('Appwrite server configuration is incomplete.');
-}
+const missingConfiguration = [
+  !endpoint && 'APPWRITE_ENDPOINT',
+  !projectId && 'APPWRITE_PROJECT_ID',
+  !databaseId && 'APPWRITE_DATABASE_ID',
+  !apiKey && 'APPWRITE_API_KEY',
+].filter(Boolean);
 
-const adminClient = new sdk.Client().setEndpoint(endpoint).setProject(projectId).setKey(apiKey);
-const adminTables = new sdk.TablesDB(adminClient);
-const adminUsers = new sdk.Users(adminClient);
-const adminStorage = new sdk.Storage(adminClient);
+// Let the HTTP app boot even if deployment variables were omitted. The health
+// routes can then report a safe diagnostic instead of Vercel failing invocation.
+const adminClient = missingConfiguration.length
+  ? null
+  : new sdk.Client().setEndpoint(endpoint).setProject(projectId).setKey(apiKey);
+const adminTables = adminClient ? new sdk.TablesDB(adminClient) : null;
+const adminUsers = adminClient ? new sdk.Users(adminClient) : null;
+const adminStorage = adminClient ? new sdk.Storage(adminClient) : null;
 const authenticationInFlight = new Map();
 
 function getJwtClient(jwt) {
@@ -71,4 +78,4 @@ class AppError extends Error {
   }
 }
 
-module.exports = { AppError, adminTables, adminUsers, adminStorage, authenticateRequest, databaseId, recruitmentBucketId, sdk };
+module.exports = { AppError, adminTables, adminUsers, adminStorage, authenticateRequest, databaseId, missingConfiguration, recruitmentBucketId, sdk };
