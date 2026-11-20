@@ -48,15 +48,24 @@ app.get('/api/health', async (_request, response) => {
     return response.status(503).json({ status: 'degraded', service: 'uktech-tp-backend', appwrite: { configured: false, missingConfiguration } });
   }
   let databaseReachable = false; let storageReady = false;
+  const diagnostics = {};
   try { await adminTables.listRows({ databaseId, tableId: 'members', queries: [sdk.Query.limit(1)] }); databaseReachable = true; }
-  catch (error) { console.error(`Appwrite database health probe failed: ${error.code || 'unknown'}`); }
+  catch (error) {
+    const code = Number(error.code) || 0;
+    diagnostics.database = { code: code || 'unknown', reason: code === 401 || code === 403 ? 'api_key_scope_or_project_access' : code === 404 ? 'database_or_members_table_not_found' : 'request_failed' };
+    console.error(`Appwrite database health probe failed: ${code || 'unknown'}`);
+  }
   try {
     const bucket = await adminStorage.getBucket({ bucketId: recruitmentBucketId });
     const permissions = bucket.$permissions || bucket.permissions || [];
     storageReady = Boolean(bucket.enabled && bucket.encryption && bucket.fileSecurity && permissions.length === 0);
-  } catch (error) { console.error(`Appwrite Storage health probe failed: ${error.code || 'unknown'}`); }
+  } catch (error) {
+    const code = Number(error.code) || 0;
+    diagnostics.storage = { code: code || 'unknown', reason: code === 401 || code === 403 ? 'api_key_scope_or_project_access' : code === 404 ? 'bucket_not_found' : 'request_failed' };
+    console.error(`Appwrite Storage health probe failed: ${code || 'unknown'}`);
+  }
   const ready = databaseReachable && storageReady;
-  response.status(ready ? 200 : 503).json({ status: ready ? 'ok' : 'degraded', service: 'uktech-tp-backend', appwrite: { configured: true, databaseReachable, storageReady }, timestamp: new Date().toISOString() });
+  response.status(ready ? 200 : 503).json({ status: ready ? 'ok' : 'degraded', service: 'uktech-tp-backend', appwrite: { configured: true, databaseReachable, storageReady, ...(ready ? {} : { diagnostics }) }, timestamp: new Date().toISOString() });
 });
 
 app.use('/api', apiRouter);
