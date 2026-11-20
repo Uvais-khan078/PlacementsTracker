@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { apiRequest } from '../../lib/api';
+import { getTrustedProfile, signIn, signOut } from '../../lib/appwrite/auth';
 import type { MemberProfile } from '../../types/domain';
 
 type Props = {
@@ -25,11 +26,17 @@ export default function FirstLoginSetup({ profile, onComplete, onSignOut }: Prop
     if (newPassword === currentPassword) { setError('Choose a new password different from your temporary password.'); return; }
     setBusy(true);
     try {
-      const updated = await apiRequest<MemberProfile>('/auth/complete-first-login', {
+      await apiRequest<MemberProfile>('/auth/complete-first-login', {
         method: 'POST',
         body: JSON.stringify({ full_name: fullName.trim(), email: email.trim(), current_password: currentPassword, new_password: newPassword }),
       });
-      onComplete(updated);
+      // Updating the password through Appwrite's admin API can invalidate the
+      // session/JWT created during the initial sign-in. Replace it before any
+      // workspace request is made so the new JWT retains the account scope.
+      await signOut().catch(() => undefined);
+      await signIn(email.trim(), newPassword);
+      const freshProfile = await getTrustedProfile();
+      onComplete(freshProfile);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Could not secure your account. Please try again.');
     } finally {
